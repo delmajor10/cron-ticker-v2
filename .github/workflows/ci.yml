@@ -25,7 +25,11 @@ jobs:
         run: |
           echo "App: ${{env.APP_NAME}}, Node: ${{env.NODE_VERSION}}"
 
+      - name: Show Github variables
+        run: |
+          echo "App: ${{variables.APP_NAME}}"
+
       - name: Build 
         run: npm run build
         env:
-          APP_VERSION: "3.0.0"
+          APP_VERSION: "${{variables.APP_NAME}}"
