@@ -1,4 +1,4 @@
-name: CI Pipeline
+name: CI Pipeline Completo
 
 on:
   push:
@@ -7,27 +7,79 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-env: #GLOBALES
-  NODE_VERSION: "20"
-  
+env:
+  NODE_VERSION: '20'
+
 jobs:
-  test:
-    name: Test multiple Node versions${{matrix.node-version}}
+
+  lint:
+    name: 🔍 Lint
     runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-vesrion: [18, 20, 22]
-      fail-fast: false
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Setup Node ${{matrix.node-version}}
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: ${{matrix.node-version}}
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
       - run: npm ci
-      - run: npm run test
+      - run: npm run lint
+
+  test:
+    name: 🧪 Tests + Coverage
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run test:coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-${{ github.sha }}
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: 📦 Build
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+      - run: npm ci
+      - name: Build APP
+        run: npm run build  # Importante: en minúsculas para evitar errores
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ github.sha }}
+          path: dist/
+          retention-days: 5
+
+  summary:
+    name: ✅ Summary
+    runs-on: ubuntu-latest
+    needs: [lint, test, build]
+    if: always()
+    steps:
+      - name: Pipeline result
+        run: |
+          echo '================================='
+          echo '  PIPELINE SUMMARY'
+          echo '================================='
+          echo '  Lint:  ${{ needs.lint.result }}'
+          echo '  Test:  ${{ needs.test.result }}'
+          echo '  Build: ${{ needs.build.result }}'
+          echo '================================='
+          echo '  Commit: ${{ github.sha }}'
+          echo '  Branch: ${{ github.ref_name }}'
+          echo '  Actor:  ${{ github.actor }}'
+          echo '================================='
