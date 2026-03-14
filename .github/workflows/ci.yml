@@ -9,7 +9,6 @@ on:
 
 env: #GLOBALES
   NODE_VERSION: "20"
-  APP_NAME: cron-ticker-v2
   
 jobs:
   # JOB 3 BUILD
