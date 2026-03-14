@@ -24,7 +24,7 @@ jobs:
       - run: npm ci
 
       - name: Build APP
-        run: npm run Build
+        run: npm run build
         env: 
           APP_VERSION: ${{vars.APP_VERSION || '1.0.0'}}
 
